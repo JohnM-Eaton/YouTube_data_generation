@@ -1,0 +1,109 @@
+#Downloading YouTube Data
+
+install.packages("tuber")
+install.packages("magrittr")
+install.packages("tidyverse")
+install.packages(purrr)
+
+
+library(tuber) # youtube API
+library(magrittr) # Pipes %>%, %T>% and equals(), extract().
+library(tidyverse) # all tidyverse packages
+library(purrr) # package for iterating/extracting data
+
+
+#Create objects for your client ID and "password"
+client_id <-"xxxxx"
+client_secret <- "xxxxx"
+
+
+# use the youtube oauth 
+yt_oauth(app_id = client_id,
+         app_secret = client_secret,
+         token = '')
+#After authorizing, your browser will give you an access code to copy and paste into R's console
+
+#Tuber commands for downloading data:
+
+##General YouTube Channel statistics
+get_channel_stats(channel_id='')
+#total number of views, subscribers, number of videos,
+#channel description, 1st launched
+
+  #IDs are typically the last sequence of the URL:
+        #e.g. https://www.youtube.com/channel/UCjmJDM5pRKbUlVIzDYYWb6g
+              #The Channel ID is UCjmJDM5pRKbUlVIzDYYWb6g.
+              #This is the URL of the channel's web page, not a specific video.
+
+#Create an object storing the data
+WB_channel <- get_channel_stats(channel_id='UCjmJDM5pRKbUlVIzDYYWb6g')
+
+    #Could get mass statistics on all of their videos, but that is time consuming 
+      #and takes up a lot of your quota
+
+
+#Looking at individual video-
+
+#The Batman 2021 trailer ~downloaded on 9/3
+    #url is https://www.youtube.com/watch?v=NLOp_6uPccQ
+      #video ID is NLOp_6uPccQ
+
+bat_stats <- get_stats(video_id="NLOp_6uPccQ")
+#individual videos: view count, like count, dislike count, comment count
+
+bat_details <- get_video_details(video_id="NLOp_6uPccQ")
+#Title, tags, description
+
+#get all comments
+
+bat_comments <- get_all_comments(video_id="NLOp_6uPccQ")
+    #83,000 comments on Youtube page
+    #66,893 comments downloaded- Why?
+        #Tuber isn't able to get all "reply" comments, which are included in YouTube's count.
+        #Do have all of the originally written comments (i.e. non-replies)
+
+
+###Look at the top 10 words
+#Clean for Analysis
+
+library(dplyr)
+library(tidyr)
+library(tidytext)
+
+comments.bat = bat_comments %>% select(authorDisplayName, textOriginal)
+
+head(comments.bat$textOriginal)
+#use the unnest token function to convert to lowercase, remove punctuation, etc.
+
+#strip of any http elements
+comments.bat$stripped_text1 <-gsub("http\\S+", "", comments.bat$textOriginal)
+
+comments.batstr <- comments.bat %>%
+  select(stripped_text1) %>%
+  unnest_tokens(word, stripped_text1)
+
+head(comments.batstr)
+#remove stop words from the list of words
+cleaned_bat <- comments.batstr %>%
+  anti_join(stop_words)
+
+head(cleaned_bat)
+
+
+#plot the top 10 words for all comments
+library(ggplot2)
+
+#Top 10 words in ABCbay
+cleaned_bat %>%
+  count(word, sort = TRUE) %>%
+  top_n(10) %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(x = n, y = word)) +
+  geom_col() +
+  xlab(NULL) +
+  coord_flip() +
+  theme_classic() +
+  labs(x = "Count",
+       y= "Unique words",
+       title = "Top 10 Unique words from comments for The Batman trailer")
+
