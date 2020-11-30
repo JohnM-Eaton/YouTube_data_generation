@@ -432,19 +432,3 @@ D2.cspan_comments$type = "Full"
 
 #Creating column for time of debate
 D2.cspan_comments$debate = "Second Presidential debate"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
